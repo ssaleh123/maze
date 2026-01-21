@@ -149,21 +149,24 @@ func generateMaze(previous [][]int) [][]int {
 	carve(1, 1)
 
 	// Corner exits
-	m[0][0] = 0
-	m[0][GridSize-1] = 0
-	m[GridSize-1][0] = 0
-	m[GridSize-1][GridSize-1] = 0
+// Edge exits (reachable)
+m[0][1] = 0
+m[GridSize-1][GridSize-2] = 0
+m[1][0] = 0
+m[GridSize-2][GridSize-1] = 0
+
+
 
 	// Slight similarity
 	if previous != nil {
-		for y := 1; y < GridSize-1; y++ {
-			for x := 1; x < GridSize-1; x++ {
-				if rand.Float64() < 0.1 {
-					m[y][x] = previous[y][x]
-				}
+	for y := 1; y < GridSize-1; y++ {
+		for x := 1; x < GridSize-1; x++ {
+			if rand.Float64() < 0.1 && previous[y][x] == 1 {
+				m[y][x] = 1
 			}
 		}
 	}
+}
 
 	return m
 }
@@ -171,8 +174,13 @@ func generateMaze(previous [][]int) [][]int {
 func isExit(p *Player) bool {
 	gx := int(p.X) / CellSize
 	gy := int(p.Y) / CellSize
-	return (gx == 0 || gx == GridSize-1) && (gy == 0 || gy == GridSize-1)
+
+	return (gy == 0 && gx == 1) ||
+	       (gy == GridSize-1 && gx == GridSize-2) ||
+	       (gx == 0 && gy == 1) ||
+	       (gx == GridSize-1 && gy == GridSize-2)
 }
+
 
 /* =========================
    Player Logic
@@ -186,31 +194,38 @@ func spawnPlayer(id string) *Player {
 	}
 }
 
+func canMove(nx, ny float64) bool {
+	points := [][2]float64{
+		{nx - PlayerSize, ny},
+		{nx + PlayerSize, ny},
+		{nx, ny - PlayerSize},
+		{nx, ny + PlayerSize},
+	}
+
+	for _, pt := range points {
+		gx := int(pt[0]) / CellSize
+		gy := int(pt[1]) / CellSize
+
+		if gx < 0 || gy < 0 || gx >= GridSize || gy >= GridSize {
+			return false
+		}
+		if maze[gy][gx] == 1 {
+			return false
+		}
+	}
+	return true
+}
+
 func tryMove(p *Player, dx, dy float64) {
 	nx := p.X + dx
 	ny := p.Y + dy
 
-	gx := int(nx) / CellSize
-	gy := int(ny) / CellSize
-
-	if gx < 0 || gy < 0 || gx >= GridSize || gy >= GridSize {
-		return
-	}
-
-	if maze[gy][gx] == 0 {
+	if canMove(nx, ny) {
 		p.X = nx
 		p.Y = ny
 	}
 }
 
-func randID() string {
-	const letters = "abcdefghijklmnopqrstuvwxyz0123456789"
-	b := make([]byte, 8)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
 
 /* =========================
    HTML + JS
@@ -224,7 +239,8 @@ func serveHTML(w http.ResponseWriter, r *http.Request) {
 <title>Multiplayer Maze</title>
 <style>
 body { margin:0; background:#111; }
-canvas { display:block; margin:auto; background:#000; }
+canvas { display:block; margin:auto; background:#111; }
+
 </style>
 </head>
 <body>
@@ -242,13 +258,20 @@ let maze = [];
 let players = {};
 
 
+let canvasSized = false;
+
 ws.onmessage = e => {
-	const state = JSON.parse(e.data);
-	maze = state.maze;
-	players = state.players;
-	c.width = maze.length * CELL;
-	c.height = maze.length * CELL;
-	draw();
+  const state = JSON.parse(e.data);
+  maze = state.maze;
+  players = state.players;
+
+  if (!canvasSized) {
+    c.width = maze.length * CELL;
+    c.height = maze.length * CELL;
+    canvasSized = true;
+  }
+
+  draw();
 };
 
 function draw() {
@@ -256,9 +279,10 @@ function draw() {
 	for (let y=0;y<maze.length;y++) {
 		for (let x=0;x<maze.length;x++) {
 			if (maze[y][x] === 1) {
-				ctx.fillStyle = "#000";
-				ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
-			}
+  ctx.fillStyle = "#444";
+  ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
+}
+
 		}
 	}
 	for (let id in players) {
@@ -286,6 +310,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
