@@ -153,16 +153,32 @@ function hitWall(nx, ny){
 }
 
 // ----- Movement -----
+// ----- Check Exit -----
+function checkExit() {
+  // top-left or bottom-right openings
+  if ((player.x < 1 && player.y < 1) || 
+      (player.x > COLS-1 && player.y > ROWS-1)) {
+    // regenerate maze
+    generateMaze();
+    // reset player to center
+    player.x = COLS/2 + 0.5;
+    player.y = ROWS/2 + 0.5;
+  }
+}
+
+// ----- Movement -----
 let lastTime=performance.now();
 function movePlayer(delta){
-  let nx = player.x, ny=player.y;
+  let nx = player.x, ny = player.y;
   const s = player.speed*delta;
   if(keys["w"]||keys["arrowup"]){ let t=ny-s; if(!hitWall(nx,t)) ny=t; }
   if(keys["s"]||keys["arrowdown"]){ let t=ny+s; if(!hitWall(nx,t)) ny=t; }
   if(keys["a"]||keys["arrowleft"]){ let t=nx-s; if(!hitWall(t,ny)) nx=t; }
   if(keys["d"]||keys["arrowright"]){ let t=nx+s; if(!hitWall(t,ny)) nx=t; }
   player.x = nx; player.y = ny;
+  checkExit(); // <-- new
 }
+
 
 function loop(now){
   const delta=(now-lastTime)/1000;
@@ -176,6 +192,26 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+
+function regenerateMaze() {
+  // copy maze from Go server for first render, then shuffle slightly
+  for(let y=0;y<ROWS;y++){
+    for(let x=0;x<COLS;x++){
+      // randomly open or close walls slightly to make a "new" maze
+      for(let i=0;i<4;i++){
+        if(Math.random()<0.1) maze[y][x].walls[i] = !maze[y][x].walls[i];
+      }
+      // reset visited for consistency
+      maze[y][x].visited = false;
+    }
+  }
+  // ensure openings top-left and bottom-right remain
+  maze[0][0].walls[3] = false;
+  maze[ROWS-1][COLS-1].walls[1] = false;
+}
+
+
+
 </script>
 </body></html>
 `))
@@ -202,3 +238,4 @@ func boolToJS(b bool) string {
 	if b { return "true" }
 	return "false"
 }
+
