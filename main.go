@@ -4,10 +4,11 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 )
 
-const size = 21 // must be odd for maze paths
+const size = 21 // must be odd
 
 type Cell struct {
 	Top, Right, Bottom, Left bool
@@ -25,30 +26,25 @@ func main() {
 }
 
 func generateMaze() {
-	// Initialize all walls
+	// Initialize walls
 	for y := 0; y < size; y++ {
 		for x := 0; x < size; x++ {
 			maze[y][x] = Cell{Top: true, Right: true, Bottom: true, Left: true}
 		}
 	}
-
 	dfs(1, 1)
 }
 
 func dfs(x, y int) {
 	maze[y][x].Visited = true
 	dirs := []struct{ dx, dy int; wall string }{
-		{0, -1, "Top"},
-		{1, 0, "Right"},
-		{0, 1, "Bottom"},
-		{-1, 0, "Left"},
+		{0, -1, "Top"}, {1, 0, "Right"}, {0, 1, "Bottom"}, {-1, 0, "Left"},
 	}
 	rand.Shuffle(len(dirs), func(i, j int) { dirs[i], dirs[j] = dirs[j], dirs[i] })
 
 	for _, d := range dirs {
 		nx, ny := x+d.dx*2, y+d.dy*2
 		if nx > 0 && ny > 0 && nx < size-1 && ny < size-1 && !maze[ny][nx].Visited {
-			// Remove wall between current and next
 			switch d.wall {
 			case "Top":
 				maze[y-1][x].Bottom = false
@@ -69,7 +65,6 @@ func dfs(x, y int) {
 }
 
 func serveHTML(w http.ResponseWriter, r *http.Request) {
-	// Convert maze to JS
 	w.Write([]byte(`
 <!DOCTYPE html>
 <html>
@@ -78,10 +73,11 @@ func serveHTML(w http.ResponseWriter, r *http.Request) {
 <script>
 const c = document.getElementById("c")
 const ctx = c.getContext("2d")
-const size = ` + string(size) + `
+const size = ` + strconv.Itoa(size) + `
 const tile = 20
 c.width = size*tile + tile
 c.height = size*tile + tile
+
 const maze = ` + mazeToJS() + `
 
 ctx.strokeStyle = "#0a1a3a"
@@ -92,10 +88,10 @@ for (let y=0;y<size;y++) {
 		const cell = maze[y][x]
 		const px = x*tile + tile/2
 		const py = y*tile + tile/2
-		if (cell.Top) ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+tile,py); ctx.stroke()
-		if (cell.Right) ctx.beginPath(); ctx.moveTo(px+tile,py); ctx.lineTo(px+tile,py+tile); ctx.stroke()
-		if (cell.Bottom) ctx.beginPath(); ctx.moveTo(px,py+tile); ctx.lineTo(px+tile,py+tile); ctx.stroke()
-		if (cell.Left) ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py+tile); ctx.stroke()
+		if (cell.Top) { ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+tile,py); ctx.stroke() }
+		if (cell.Right) { ctx.beginPath(); ctx.moveTo(px+tile,py); ctx.lineTo(px+tile,py+tile); ctx.stroke() }
+		if (cell.Bottom) { ctx.beginPath(); ctx.moveTo(px,py+tile); ctx.lineTo(px+tile,py+tile); ctx.stroke() }
+		if (cell.Left) { ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,py+tile); ctx.stroke() }
 	}
 }
 </script>
@@ -104,19 +100,13 @@ for (let y=0;y<size;y++) {
 	`))
 }
 
-// Convert Go maze to JS array
 func mazeToJS() string {
 	s := "["
 	for y := 0; y < size; y++ {
 		s += "["
 		for x := 0; x < size; x++ {
 			c := maze[y][x]
-			s += "{"
-			s += "Top:" + boolToJS(c.Top) + ","
-			s += "Right:" + boolToJS(c.Right) + ","
-			s += "Bottom:" + boolToJS(c.Bottom) + ","
-			s += "Left:" + boolToJS(c.Left)
-			s += "}"
+			s += "{Top:" + boolToJS(c.Top) + ",Right:" + boolToJS(c.Right) + ",Bottom:" + boolToJS(c.Bottom) + ",Left:" + boolToJS(c.Left) + "}"
 			if x < size-1 {
 				s += ","
 			}
