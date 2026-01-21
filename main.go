@@ -141,9 +141,15 @@ func send() {
 	defer mu.Unlock()
 
 	state := map[string]any{
-		"maze":    maze,
-		"players": players,
-	}
+	"maze": maze,
+}
+
+playerList := [][2]int{}
+for _, p := range players {
+	playerList = append(playerList, p)
+}
+state["players"] = playerList
+
 
 	for c := range players {
 		c.WriteJSON(state)
@@ -196,12 +202,14 @@ function draw() {
 	}
 
 	ctx.fillStyle = "red"
-	for (let k in state.players) {
-		const p = state.players[k]
-		ctx.fillRect(p[0]*tile,p[1]*tile,tile,tile)
-	}
+for (let k in state.players) {
+	const p = state.players[k]
+	ctx.fillRect(p[0] * tile, p[1] * tile, tile, tile)
+}
+
 }
 </script>
 </body>
 </html>
 `
+
