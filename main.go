@@ -5,11 +5,15 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+import "strconv"
+
 
 const (
 	GridSize   = 21 // must be odd
@@ -229,7 +233,8 @@ canvas { display:block; margin:auto; background:#000; }
 const ws = new WebSocket("ws://" + location.host + "/ws");
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
-const CELL = ` + string(rune(CellSize)) + `;
+const CELL = ` + strconv.Itoa(CellSize) + `;
+
 let maze = [];
 let players = {};
 
@@ -277,3 +282,4 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
