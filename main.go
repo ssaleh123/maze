@@ -217,14 +217,16 @@ func canMove(nx, ny float64) bool {
 }
 
 func tryMove(p *Player, dx, dy float64) {
-	nx := p.X + dx
-	ny := p.Y + dy
+	// move freely
+	p.X += dx
+	p.Y += dy
 
-	if canMove(nx, ny) {
-		p.X = nx
-		p.Y = ny
-	}
+	// clamp to maze boundaries
+	max := float64(GridSize*CellSize - PlayerSize)
+	p.X = math.Max(0, math.Min(p.X, max))
+	p.Y = math.Max(0, math.Min(p.Y, max))
 }
+
 
 func randID() string {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -317,6 +319,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
