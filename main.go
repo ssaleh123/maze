@@ -230,9 +230,14 @@ canvas { display:block; margin:auto; background:#000; }
 <body>
 <canvas id="c"></canvas>
 <script>
-const ws = new WebSocket("ws://" + location.host + "/ws");
+<script>
+const protocol = location.protocol === "https:" ? "wss://" : "ws://";
+const ws = new WebSocket(protocol + location.host + "/ws");
+
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
+const CELL = 24;
+
 const CELL = ` + strconv.Itoa(CellSize) + `;
 
 let maze = [];
@@ -282,5 +287,6 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
