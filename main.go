@@ -196,10 +196,10 @@ func spawnPlayer(id string) *Player {
 
 func canMove(nx, ny float64) bool {
 	points := [][2]float64{
-		{nx - PlayerSize, ny},
-		{nx + PlayerSize, ny},
-		{nx, ny - PlayerSize},
-		{nx, ny + PlayerSize},
+		{nx - PlayerSize, ny - PlayerSize},
+		{nx + PlayerSize, ny - PlayerSize},
+		{nx - PlayerSize, ny + PlayerSize},
+		{nx + PlayerSize, ny + PlayerSize},
 	}
 
 	for _, pt := range points {
@@ -317,6 +317,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
