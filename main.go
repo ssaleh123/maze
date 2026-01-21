@@ -195,11 +195,12 @@ func spawnPlayer(id string) *Player {
 }
 
 func canMove(nx, ny float64) bool {
+	buffer := 2.0 // allow a little overlap
 	points := [][2]float64{
-		{nx - PlayerSize, ny - PlayerSize},
-		{nx + PlayerSize, ny - PlayerSize},
-		{nx - PlayerSize, ny + PlayerSize},
-		{nx + PlayerSize, ny + PlayerSize},
+		{nx - PlayerSize + buffer, ny - PlayerSize + buffer},
+		{nx + PlayerSize - buffer, ny - PlayerSize + buffer},
+		{nx - PlayerSize + buffer, ny + PlayerSize - buffer},
+		{nx + PlayerSize - buffer, ny + PlayerSize - buffer},
 	}
 
 	for _, pt := range points {
@@ -215,6 +216,7 @@ func canMove(nx, ny float64) bool {
 	}
 	return true
 }
+
 
 func tryMove(p *Player, dx, dy float64) {
 	nx := p.X + dx
@@ -319,6 +321,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
