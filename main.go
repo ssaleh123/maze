@@ -236,12 +236,11 @@ const ws = new WebSocket(protocol + location.host + "/ws");
 
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
-const CELL = 24;
-
 const CELL = ` + strconv.Itoa(CellSize) + `;
 
 let maze = [];
 let players = {};
+
 
 ws.onmessage = e => {
 	const state = JSON.parse(e.data);
@@ -287,6 +286,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
