@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"math/rand"
 	"net/http"
@@ -17,7 +16,7 @@ const COLS = 30
 const ROWS = 20
 
 type Cell struct {
-	Walls  [4]bool `json:"walls"` // top, right, bottom, left
+	Walls  [4]bool // top, right, bottom, left
 	Visited bool
 }
 
@@ -105,9 +104,6 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	// Send initial state
 	sendState(conn)
 
-	// Broadcast to others
-	broadcastPlayers()
-
 	for {
 		var msg struct {
 			X float64 `json:"x"`
@@ -128,31 +124,25 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 			resetPlayers()
 		}
 
-		broadcastPlayers()
+		sendState(conn)
 	}
 
 	// Remove player on disconnect
 	playersLock.Lock()
 	delete(players, playerID)
 	playersLock.Unlock()
-	broadcastPlayers()
+	sendState(conn)
 }
 
 func sendState(conn *websocket.Conn) {
 	mazeLock.Lock()
 	defer mazeLock.Unlock()
+	playersLock.Lock()
+	defer playersLock.Unlock()
 	conn.WriteJSON(struct {
 		Maze    [ROWS][COLS]Cell `json:"maze"`
 		Players []*Player        `json:"players"`
 	}{maze, getPlayers()})
-}
-
-func broadcastPlayers() {
-	playersLock.Lock()
-	defer playersLock.Unlock()
-	for _, p := range players {
-		// noop, handled in client-side
-	}
 }
 
 func getPlayers() []*Player {
