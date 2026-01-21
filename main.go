@@ -229,7 +229,7 @@ canvas { display:block; margin:auto; background:#000; }
 </head>
 <body>
 <canvas id="c"></canvas>
-<script>
+
 <script>
 const protocol = location.protocol === "https:" ? "wss://" : "ws://";
 const ws = new WebSocket(protocol + location.host + "/ws");
@@ -287,6 +287,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
