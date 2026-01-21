@@ -8,14 +8,14 @@ import (
 	"time"
 )
 
-const size = 21 // must be odd
+const mazeSize = 21 // must be odd for proper maze
 
 type Cell struct {
 	Top, Right, Bottom, Left bool
 	Visited                  bool
 }
 
-var maze [size][size]Cell
+var maze [mazeSize][mazeSize]Cell
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
@@ -25,10 +25,11 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
+// ===== Maze Generation using DFS / Recursive Backtracker =====
 func generateMaze() {
-	// Initialize walls
-	for y := 0; y < size; y++ {
-		for x := 0; x < size; x++ {
+	// initialize all walls
+	for y := 0; y < mazeSize; y++ {
+		for x := 0; x < mazeSize; x++ {
 			maze[y][x] = Cell{Top: true, Right: true, Bottom: true, Left: true}
 		}
 	}
@@ -44,7 +45,7 @@ func dfs(x, y int) {
 
 	for _, d := range dirs {
 		nx, ny := x+d.dx*2, y+d.dy*2
-		if nx > 0 && ny > 0 && nx < size-1 && ny < size-1 && !maze[ny][nx].Visited {
+		if nx > 0 && ny > 0 && nx < mazeSize-1 && ny < mazeSize-1 && !maze[ny][nx].Visited {
 			switch d.wall {
 			case "Top":
 				maze[y-1][x].Bottom = false
@@ -62,15 +63,20 @@ func dfs(x, y int) {
 			dfs(nx, ny)
 		}
 	}
+
+	// optionally open entrance and exit
+	maze[1][0].Left = false
+	maze[mazeSize-2][mazeSize-1].Right = false
 }
 
+// ===== Serve HTML / JS =====
 func serveHTML(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Maze Go Multiplayer</title>
+<title>Maze Game</title>
 <style>
 html, body { margin:0; padding:0; overflow:hidden; background:#e5e5e5; }
 canvas { display:block; margin:auto; background:white; border:4px solid black; }
@@ -81,17 +87,17 @@ canvas { display:block; margin:auto; background:white; border:4px solid black; }
 <script>
 const canvas = document.getElementById("mazeCanvas");
 const ctx = canvas.getContext("2d");
-const COLS = ` + strconv.Itoa(size) + `;
-const ROWS = ` + strconv.Itoa(size) + `;
+const COLS = ` + strconv.Itoa(mazeSize) + `;
+const ROWS = ` + strconv.Itoa(mazeSize) + `;
 const CELL = 30;
-canvas.width = COLS*CELL + 2;
-canvas.height = ROWS*CELL + 2;
+canvas.width = COLS*CELL;
+canvas.height = ROWS*CELL;
 
 // ===== Maze Data =====
 const maze = ` + mazeToJS() + `;
 
-// ===== Player Data =====
-const player = {x:0.5, y:0.5, r:10, color:"#"+Math.floor(Math.random()*16777215).toString(16)};
+// ===== Player =====
+const player = {x:0.5, y:1.5, r:10, color:"#"+Math.floor(Math.random()*16777215).toString(16)};
 const keys = {};
 
 // ===== Input =====
@@ -133,8 +139,9 @@ function drawMaze(){
 
 // ===== Move Player =====
 function movePlayer(delta){
-	const speed = 5 * delta;
-	let nx = player.x, ny = player.y;
+	const speed = 5*delta;
+	let nx = player.x;
+	let ny = player.y;
 	if(keys["w"]||keys["arrowup"]){ let t=ny-speed; if(!hitWall(nx,t)) ny=t; }
 	if(keys["s"]||keys["arrowdown"]){ let t=ny+speed; if(!hitWall(nx,t)) ny=t; }
 	if(keys["a"]||keys["arrowleft"]){ let t=nx-speed; if(!hitWall(t,ny)) nx=t; }
@@ -165,15 +172,15 @@ requestAnimationFrame(loop);
 
 func mazeToJS() string {
 	s := "["
-	for y := 0; y < size; y++ {
+	for y := 0; y < mazeSize; y++ {
 		s += "["
-		for x := 0; x < size; x++ {
+		for x := 0; x < mazeSize; x++ {
 			c := maze[y][x]
 			s += "{Top:" + boolToJS(c.Top) + ",Right:" + boolToJS(c.Right) + ",Bottom:" + boolToJS(c.Bottom) + ",Left:" + boolToJS(c.Left) + "}"
-			if x < size-1 { s += "," }
+			if x < mazeSize-1 { s += "," }
 		}
 		s += "]"
-		if y < size-1 { s += "," }
+		if y < mazeSize-1 { s += "," }
 	}
 	s += "]"
 	return s
