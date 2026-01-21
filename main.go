@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"log"
-	"math"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -310,3 +309,4 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
