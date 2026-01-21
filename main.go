@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"math"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -11,9 +12,6 @@ import (
 
 	"github.com/gorilla/websocket"
 )
-
-
-
 
 const (
 	GridSize   = 21 // must be odd
@@ -28,7 +26,7 @@ type Player struct {
 }
 
 type GameState struct {
-	Maze    [][]int          `json:"maze"`
+	Maze    [][]int           `json:"maze"`
 	Players map[string]*Player `json:"players"`
 }
 
@@ -37,10 +35,10 @@ var (
 		CheckOrigin: func(r *http.Request) bool { return true },
 	}
 
-	clients   = make(map[*websocket.Conn]string)
-	players   = make(map[string]*Player)
-	maze      [][]int
-	mu        sync.Mutex
+	clients = make(map[*websocket.Conn]string)
+	players = make(map[string]*Player)
+	maze    [][]int
+	mu      sync.Mutex
 )
 
 func main() {
@@ -128,7 +126,7 @@ func generateMaze(previous [][]int) [][]int {
 
 	var carve func(x, y int)
 	carve = func(x, y int) {
-		dirs := [][2]int{{2,0},{-2,0},{0,2},{0,-2}}
+		dirs := [][2]int{{2, 0}, {-2, 0}, {0, 2}, {0, -2}}
 		rand.Shuffle(len(dirs), func(i, j int) {
 			dirs[i], dirs[j] = dirs[j], dirs[i]
 		})
@@ -148,25 +146,22 @@ func generateMaze(previous [][]int) [][]int {
 	m[1][1] = 0
 	carve(1, 1)
 
-	// Corner exits
-// Edge exits (reachable)
-m[0][1] = 0
-m[GridSize-1][GridSize-2] = 0
-m[1][0] = 0
-m[GridSize-2][GridSize-1] = 0
-
-
+	// Edge exits
+	m[0][1] = 0
+	m[GridSize-1][GridSize-2] = 0
+	m[1][0] = 0
+	m[GridSize-2][GridSize-1] = 0
 
 	// Slight similarity
 	if previous != nil {
-	for y := 1; y < GridSize-1; y++ {
-		for x := 1; x < GridSize-1; x++ {
-			if rand.Float64() < 0.1 && previous[y][x] == 1 {
-				m[y][x] = 1
+		for y := 1; y < GridSize-1; y++ {
+			for x := 1; x < GridSize-1; x++ {
+				if rand.Float64() < 0.1 && previous[y][x] == 1 {
+					m[y][x] = 1
+				}
 			}
 		}
 	}
-}
 
 	return m
 }
@@ -174,13 +169,11 @@ m[GridSize-2][GridSize-1] = 0
 func isExit(p *Player) bool {
 	gx := int(p.X) / CellSize
 	gy := int(p.Y) / CellSize
-
 	return (gy == 0 && gx == 1) ||
-	       (gy == GridSize-1 && gx == GridSize-2) ||
-	       (gx == 0 && gy == 1) ||
-	       (gx == GridSize-1 && gy == GridSize-2)
+		(gy == GridSize-1 && gx == GridSize-2) ||
+		(gx == 0 && gy == 1) ||
+		(gx == GridSize-1 && gy == GridSize-2)
 }
-
 
 /* =========================
    Player Logic
@@ -194,13 +187,13 @@ func spawnPlayer(id string) *Player {
 	}
 }
 
+// Check collision with maze walls
 func canMove(nx, ny float64) bool {
-	buffer := 2.0 // allow a little overlap
 	points := [][2]float64{
-		{nx - PlayerSize + buffer, ny - PlayerSize + buffer},
-		{nx + PlayerSize - buffer, ny - PlayerSize + buffer},
-		{nx - PlayerSize + buffer, ny + PlayerSize - buffer},
-		{nx + PlayerSize - buffer, ny + PlayerSize - buffer},
+		{nx - PlayerSize, ny - PlayerSize},
+		{nx + PlayerSize, ny - PlayerSize},
+		{nx - PlayerSize, ny + PlayerSize},
+		{nx + PlayerSize, ny + PlayerSize},
 	}
 
 	for _, pt := range points {
@@ -214,10 +207,11 @@ func canMove(nx, ny float64) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
-
+// Try to move player with wall collision
 func tryMove(p *Player, dx, dy float64) {
 	nx := p.X + dx
 	ny := p.Y + dy
@@ -228,8 +222,6 @@ func tryMove(p *Player, dx, dy float64) {
 	}
 }
 
-
-
 func randID() string {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	b := make([]byte, 8)
@@ -238,6 +230,7 @@ func randID() string {
 	}
 	return string(b)
 }
+
 /* =========================
    HTML + JS
 ========================= */
@@ -251,56 +244,52 @@ func serveHTML(w http.ResponseWriter, r *http.Request) {
 <style>
 body { margin:0; background:#111; }
 canvas { display:block; margin:auto; background:#111; }
-
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
-
 <script>
 const protocol = location.protocol === "https:" ? "wss://" : "ws://";
 const ws = new WebSocket(protocol + location.host + "/ws");
-
 const c = document.getElementById("c");
 const ctx = c.getContext("2d");
 const CELL = ` + strconv.Itoa(CellSize) + `;
 
 let maze = [];
 let players = {};
-
-
 let canvasSized = false;
 
 ws.onmessage = e => {
-  const state = JSON.parse(e.data);
-  maze = state.maze;
-  players = state.players;
+	const state = JSON.parse(e.data);
+	maze = state.maze;
+	players = state.players;
 
-  if (!canvasSized) {
-    c.width = maze.length * CELL;
-    c.height = maze.length * CELL;
-    canvasSized = true;
-  }
+	if (!canvasSized) {
+		c.width = maze.length * CELL;
+		c.height = maze.length * CELL;
+		canvasSized = true;
+	}
 
-  draw();
+	draw();
 };
 
 function draw() {
 	ctx.clearRect(0,0,c.width,c.height);
-	for (let y=0;y<maze.length;y++) {
-		for (let x=0;x<maze.length;x++) {
-			if (maze[y][x] === 1) {
-  ctx.fillStyle = "#444";
-  ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
-}
 
+	for (let y=0; y<maze.length; y++) {
+		for (let x=0; x<maze.length; x++) {
+			if (maze[y][x] === 1) {
+				ctx.fillStyle = "#444";
+				ctx.fillRect(x*CELL, y*CELL, CELL, CELL);
+			}
 		}
 	}
+
 	for (let id in players) {
 		const p = players[id];
 		ctx.fillStyle = "white";
 		ctx.beginPath();
-		ctx.arc(p.x,p.y,6,0,Math.PI*2);
+		ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
 		ctx.fill();
 	}
 }
@@ -321,16 +310,3 @@ setInterval(() => {
 </body>
 </html>`))
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
