@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	GridSize   = 21 // must be odd
-	CellSize   = 24
+	GridSize   = 41 // must be odd
+	CellSize   = 20
 	PlayerSize = 6
 )
+
 
 type Player struct {
 	ID string  `json:"id"`
@@ -163,8 +164,45 @@ for y := 2; y < GridSize-2; y += 2 {
 
 	// Edge exits
 	// Guaranteed exits (bottom-left & bottom-right)
-m[GridSize-1][1] = 0
-m[GridSize-2][1] = 0
+// Guaranteed 2 exits anywhere on edges
+edges := [][2]int{}
+
+// Top & bottom rows
+for x := 1; x < GridSize-1; x++ {
+	edges = append(edges, [2]int{x, 0})              // top
+	edges = append(edges, [2]int{x, GridSize-1})    // bottom
+}
+// Left & right columns
+for y := 1; y < GridSize-1; y++ {
+	edges = append(edges, [2]int{0, y})             // left
+	edges = append(edges, [2]int{GridSize-1, y})    // right
+}
+
+// Pick 2 distinct random exits
+perm := rand.Perm(len(edges))
+exit1 := edges[perm[0]]
+exit2 := edges[perm[1]]
+
+// Carve them
+m[exit1[1]][exit1[0]] = 0
+m[exit2[1]][exit2[0]] = 0
+
+// Optional: carve one adjacent cell inward so player can move
+dx1, dy1 := 0, 0
+dx2, dy2 := 0, 0
+
+if exit1[0] == 0 { dx1 = 1 }
+if exit1[0] == GridSize-1 { dx1 = -1 }
+if exit1[1] == 0 { dy1 = 1 }
+if exit1[1] == GridSize-1 { dy1 = -1 }
+m[exit1[1]+dy1][exit1[0]+dx1] = 0
+
+if exit2[0] == 0 { dx2 = 1 }
+if exit2[0] == GridSize-1 { dx2 = -1 }
+if exit2[1] == 0 { dy2 = 1 }
+if exit2[1] == GridSize-1 { dy2 = -1 }
+m[exit2[1]+dy2][exit2[0]+dx2] = 0
+
 
 m[GridSize-1][GridSize-2] = 0
 m[GridSize-2][GridSize-2] = 0
@@ -361,6 +399,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
