@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"math"
 
 	"github.com/gorilla/websocket"
 )
@@ -93,13 +94,18 @@ regenerate := false
 // Move player once
 tryMove(p, input.DX, input.DY)
 
-// Check if any player is at or near an exit
+// Clamp position inside grid bounds
+p.X = math.Max(0, math.Min(p.X, float64(GridSize*CellSize)))
+p.Y = math.Max(0, math.Min(p.Y, float64(GridSize*CellSize)))
+
+// Now check exits
 for _, pl := range players {
-    if isExit(pl) {
-        regenerate = true
-        break
-    }
+	if isExit(pl) {
+		regenerate = true
+		break
+	}
 }
+
 
 if regenerate {
     // Generate new maze
@@ -249,9 +255,24 @@ m[cy-1][cx-1] = 0
 func isExit(p *Player) bool {
 	gx := int(p.X) / CellSize
 	gy := int(p.Y) / CellSize
-	return (gy == GridSize-1 && (gx == 1 || gx == GridSize-2))
 
+	// Must be inside grid
+	if gx < 0 || gy < 0 || gx >= GridSize || gy >= GridSize {
+		return false
+	}
+
+	// Open cell on any edge = exit
+	if maze[gy][gx] == 0 {
+		return gx == 0 ||
+			gx == GridSize-1 ||
+			gy == 0 ||
+			gy == GridSize-1
+	}
+
+	return false
 }
+
+
 
 /* =========================
    Player Logic
@@ -297,8 +318,10 @@ func canMove(nx, ny float64) bool {
 		gy := int(pt[1]) / CellSize
 
 		if gx < 0 || gy < 0 || gx >= GridSize || gy >= GridSize {
-			return false
-		}
+	// Allow movement outside → exit
+	return true
+}
+
 		if maze[gy][gx] == 1 {
 			return false
 		}
@@ -416,6 +439,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
