@@ -87,17 +87,34 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 
 		mu.Lock()
 		p := players[id]
-		tryMove(p, input.DX, input.DY)
 
-		if isExit(p) {
-			maze = generateMaze(maze)
-			for _, pl := range players {
-				pl.X = float64(GridSize*CellSize) / 2
-				pl.Y = float64(GridSize*CellSize) / 2
-			}
-		}
+regenerate := false
 
-		broadcast()
+// Move player once
+tryMove(p, input.DX, input.DY)
+
+// Check if any player is at or near an exit
+for _, pl := range players {
+    if isExit(pl) {
+        regenerate = true
+        break
+    }
+}
+
+if regenerate {
+    // Generate new maze
+    maze = generateMaze(maze)
+    // Reset all players to center
+    for _, pl := range players {
+        pl.X = float64(GridSize*CellSize) / 2
+        pl.Y = float64(GridSize*CellSize) / 2
+    }
+}
+
+// Broadcast state after possible regeneration
+broadcast()
+
+
 		mu.Unlock()
 	}
 }
@@ -399,6 +416,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
