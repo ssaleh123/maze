@@ -180,7 +180,14 @@ m[GridSize-2][GridSize-2] = 0
 	}
 }
 
+	cx := GridSize / 2
+cy := GridSize / 2
 
+m[cy][cx] = 0
+m[cy][cx-1] = 0
+m[cy-1][cx] = 0
+m[cy-1][cx-1] = 0
+	
 	return m
 }
 
@@ -354,6 +361,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
