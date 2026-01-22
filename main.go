@@ -144,6 +144,10 @@ func generateMaze(previous [][]int) [][]int {
 
 	// Reduce dead-ends by punching extra paths
 // Add loops WITHOUT breaking maze structure
+m[1][1] = 0
+carve(1, 1)
+
+// Add loops WITHOUT breaking maze structure
 for y := 2; y < GridSize-2; y += 2 {
 	for x := 2; x < GridSize-2; x += 2 {
 		if rand.Float64() < 0.25 {
@@ -153,6 +157,7 @@ for y := 2; y < GridSize-2; y += 2 {
 		}
 	}
 }
+
 
 
 
@@ -182,10 +187,8 @@ m[GridSize-2][GridSize-2] = 0
 func isExit(p *Player) bool {
 	gx := int(p.X) / CellSize
 	gy := int(p.Y) / CellSize
-	return (gy == 0 && gx == 1) ||
-		(gy == GridSize-1 && gx == GridSize-2) ||
-		(gx == 0 && gy == 1) ||
-		(gx == GridSize-1 && gy == GridSize-2)
+	return (gy == GridSize-1 && (gx == 1 || gx == GridSize-2))
+
 }
 
 /* =========================
@@ -351,6 +354,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
