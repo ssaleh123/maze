@@ -142,25 +142,36 @@ func generateMaze(previous [][]int) [][]int {
 		}
 	}
 
-	m[1][1] = 0
-	carve(1, 1)
+	// Reduce dead-ends by punching extra paths
+for y := 1; y < GridSize-1; y++ {
+	for x := 1; x < GridSize-1; x++ {
+		if m[y][x] == 1 && rand.Float64() < 0.12 {
+			m[y][x] = 0
+		}
+	}
+}
+
 
 	// Edge exits
-	m[0][1] = 0
-	m[GridSize-1][GridSize-2] = 0
-	m[1][0] = 0
-	m[GridSize-2][GridSize-1] = 0
+	// Guaranteed exits (bottom-left & bottom-right)
+m[GridSize-1][1] = 0
+m[GridSize-2][1] = 0
+
+m[GridSize-1][GridSize-2] = 0
+m[GridSize-2][GridSize-2] = 0
+
 
 	// Slight similarity
 	if previous != nil {
-		for y := 1; y < GridSize-1; y++ {
-			for x := 1; x < GridSize-1; x++ {
-				if rand.Float64() < 0.1 && previous[y][x] == 1 {
-					m[y][x] = 1
-				}
+	for y := 1; y < GridSize-1; y++ {
+		for x := 1; x < GridSize-1; x++ {
+			if rand.Float64() < 0.08 {
+				m[y][x] = previous[y][x]
 			}
 		}
 	}
+}
+
 
 	return m
 }
@@ -337,5 +348,6 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
