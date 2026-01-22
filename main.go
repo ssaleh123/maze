@@ -143,13 +143,17 @@ func generateMaze(previous [][]int) [][]int {
 	}
 
 	// Reduce dead-ends by punching extra paths
-for y := 1; y < GridSize-1; y++ {
-	for x := 1; x < GridSize-1; x++ {
-		if m[y][x] == 1 && rand.Float64() < 0.12 {
-			m[y][x] = 0
+// Add loops WITHOUT breaking maze structure
+for y := 2; y < GridSize-2; y += 2 {
+	for x := 2; x < GridSize-2; x += 2 {
+		if rand.Float64() < 0.25 {
+			dirs := [][2]int{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}
+			d := dirs[rand.Intn(len(dirs))]
+			m[y+d[1]][x+d[0]] = 0
 		}
 	}
 }
+
 
 
 	// Edge exits
@@ -159,7 +163,6 @@ m[GridSize-2][1] = 0
 
 m[GridSize-1][GridSize-2] = 0
 m[GridSize-2][GridSize-2] = 0
-
 
 	// Slight similarity
 	if previous != nil {
@@ -348,6 +351,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
