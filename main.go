@@ -179,12 +179,30 @@ func isExit(p *Player) bool {
 ========================= */
 
 func spawnPlayer(id string) *Player {
-	return &Player{
-		ID: id,
-		X:  float64(GridSize*CellSize) / 2,
-		Y:  float64(GridSize*CellSize) / 2,
+	cx := GridSize / 2
+	cy := GridSize / 2
+
+	// If center is a wall, search nearby
+	for r := 0; r < GridSize; r++ {
+		for y := cy - r; y <= cy+r; y++ {
+			for x := cx - r; x <= cx+r; x++ {
+				if x >= 0 && y >= 0 && x < GridSize && y < GridSize {
+					if maze[y][x] == 0 {
+						return &Player{
+							ID: id,
+							X:  float64(x*CellSize + CellSize/2),
+							Y:  float64(y*CellSize + CellSize/2),
+						}
+					}
+				}
+			}
+		}
 	}
+
+	// Fallback (should never hit)
+	return &Player{ID: id}
 }
+
 
 // Check collision with maze walls
 func canMove(nx, ny float64) bool {
@@ -211,15 +229,25 @@ func canMove(nx, ny float64) bool {
 }
 
 // Try to move player with wall collision
+// Try to move player with wall collision (axis-separated)
 func tryMove(p *Player, dx, dy float64) {
-	nx := p.X + dx
-	ny := p.Y + dy
+	// Move X first
+	if dx != 0 {
+		nx := p.X + dx
+		if canMove(nx, p.Y) {
+			p.X = nx
+		}
+	}
 
-	if canMove(nx, ny) {
-		p.X = nx
-		p.Y = ny
+	// Move Y second
+	if dy != 0 {
+		ny := p.Y + dy
+		if canMove(p.X, ny) {
+			p.Y = ny
+		}
 	}
 }
+
 
 func randID() string {
 	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -309,4 +337,5 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
