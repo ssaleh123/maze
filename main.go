@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	GridSize   = 41 // must be odd
+	GridSize   = 37 // must be odd
 	CellSize   = 20
 	PlayerSize = 6
 )
@@ -439,6 +439,7 @@ setInterval(() => {
 </body>
 </html>`))
 }
+
 
 
 
